@@ -1,75 +1,81 @@
 #!/bin/bash
-set -e  # Exit on any error
-set -x  # Debugging mode
-
-# TODO default config
-# TODO default env
-# make env more dynamic
-
-# How to call me:
-# ./scripts/uboot_standalone.sh /dev/sda
+#
+# Usage: ./scripts/uboot_standalone.sh /dev/sda
+#
 #
 
+# Exit on any error and enable debugging mode
+set -e
+set -x
+
+
+# TODO: Make the environment more dynamic
+
+
 # === Configuration ===
-SD_CARD_DEVICE="${1}"        # Replace with your SD card device (e.g., /dev/sdb)
-CROSS_COMPILE="arm-none-eabi-"   # Cross-compiler prefix
-base=am335x_evm
-DEFCONFIG=${base}_defconfig
-UENV_FILE=${base}.env            # Default environment file
-PARTITION_SIZE="+64M"            # Partition size for bootloader
+SD_CARD_DEVICE="${1}"                       # SD card device (e.g., /dev/sdb)
+CROSS_COMPILE="arm-linux-gnueabihf-"              # Cross-compiler prefix
+BASE="am335x_evm"
+DEFCONFIG="${BASE}_defconfig"
+UENV_FILE="${BASE}.env"                     # Default environment file
+PARTITION_SIZE="+64M"                       # Partition size for bootloader
 MOUNT_DIR="$(mktemp -d /tmp/sdcard.XXXXXX)"
 
 
-# === Check ===
+# === Check for SD card device ===
 if [ -z ${SD_CARD_DEVICE} ]; then
    echo -e "\e[31mVar \${1} is empty... Replace with your SD card device (e.g., /dev/sdb)\e[0m"
    exit 1
 fi
 
-
-# === Functions ===
-
+# Install required packages for U-Boot compilation
 function install_prerequisites() {
    echo "Installing prerequisites..."
    sudo apt-get update
    sudo apt-get install -y build-essential gcc-arm-none-eabi bison flex libssl-dev git
 }
 
-function clone_and_build_uboot() {
+# Clone U-Boot repository and build it
+clone_and_build_uboot() {
    echo "Cloning and building U-Boot..."
 
    mkdir -p uboot_standalone
    pushd uboot_standalone
       git clone https://source.denx.de/u-boot/u-boot.git u-boot || (cd u-boot && git fetch && cd ..)
       pushd u-boot
-         # === defconfig
-         # Backup: Nice trick: to track any changes you did with menuconfig:
-         if [ -f .config ]; then
-            cp .config ../configs/${base}.config
-         fi
-
-         # Use defconfig
-         if [ ! -f .config ]; then
-            make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- ${DEFCONFIG}
-            make savedefconfig
-            cp defconfig ../configs/${base}.config
-         else
-            # use my modified defconfig version
-            cp ../configs/${base}.config .config
-         fi
-
-         # TODO generate this with python!
-         # TODO move this to independant variable
-         # Generate uEnv.txt
-         cp ../env/$UENV_FILE ../env/uEnv.txt
-
-         # === build
-         make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j12
+         setup_defconfig
+         build_uboot
       popd
    popd
 }
 
-function prepare_sdcard() {
+# Setup U-Boot defconfig based on the base configuration
+setup_defconfig() {
+   if [ ! -f .config ]; then
+      # this part should use only once, at the very  first time
+      cp ../configs/${BASE}.config .config
+   else
+   if [ ! -f .config ]; then
+      cp ../configs/${BASE}.config .config
+   else
+      echo "Using existing config..."
+
+      # take screenshot fro it!
+      cp .config ../configs/${BASE}.config
+   fi
+
+   # Copy environment file
+   cp ../env/$UENV_FILE ../env/uEnv.txt
+}
+
+# Build U-Boot using the provided defconfig
+build_uboot() {
+   echo "Building U-Boot..."
+   make ARCH=arm CROSS_COMPILE=${CROSS_COMPILE} -j12
+}
+
+# Setup U-Boot defconfig based on the base configuration
+prepare_sdcard() {
    echo "Preparing SD card: $SD_CARD_DEVICE"
 
    # Unmount any mounted partitions
@@ -92,14 +98,14 @@ function prepare_sdcard() {
    sudo mkfs.vfat -F 32 ${SD_CARD_DEVICE}1
 }
 
-function mount_sdcard() {
-    echo "Mounting the SD card partition..."
-    sudo mkdir -p $MOUNT_DIR
-    sudo mount ${SD_CARD_DEVICE}1 $MOUNT_DIR
+mount_sdcard() {
+   echo "Mounting the SD card partition..."
+   sudo mkdir -p $MOUNT_DIR
+   sudo mount ${SD_CARD_DEVICE}1 $MOUNT_DIR
 }
 
 # Function to label the partition as "boot"
-function label_partition() {
+label_partition() {
    echo ">> Labeling the partition as 'boot'..."
    sudo fatlabel ${SD_CARD_DEVICE}1 boot || {
       echo "Error: Failed to label partition as 'boot'."
@@ -108,7 +114,7 @@ function label_partition() {
 }
 
 # TODO Function to generate uboot.env from uEnv.txt
-function create_uboot_env() {
+create_uboot_env() {
    echo "Creating uboot.env from uEnv.txt..."
 
    # Use mkimage to create the environment binary file
@@ -128,7 +134,8 @@ function create_uboot_env() {
 #   #sudo dd if=uboot.env of=$SD_CARD_DEVICE bs=1K seek=$ENV_OFFSET conv=notrunc status=progress
 #}
 
-function copy_uboot_to_fat() {
+# Copy U-Boot and environment files to the SD card
+copy_uboot_to_fat() {
    echo "Copying U-Boot components to FAT partition..."
 
    pushd uboot_standalone
@@ -148,15 +155,17 @@ function copy_uboot_to_fat() {
    popd
 }
 
-function cleanup() {
+# Clean up build files and unmount the SD card
+cleanup() {
    echo "Cleaning up build files..."
 
    sudo umount $MOUNT_DIR
    sudo rm -r $MOUNT_DIR
 
 }
-# === Main Script ===
 
+
+# === Main Script ===
 install_prerequisites
 clone_and_build_uboot
 prepare_sdcard
