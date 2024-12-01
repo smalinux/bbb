@@ -1,0 +1,5 @@
+# Default U-Boot environment variables
+bootdelay=20
+me=smalinux
+email=sohaib.amhmd@gmail.com
+bootcmd=echo Booting from SD card...; boot

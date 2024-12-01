@@ -1,0 +1,100 @@
+arch=arm
+baudrate=115200
+board=am335x
+board_name=A335BNLT
+board_rev=00C0
+board_serial=2208SBB14878
+boot_a_script=load ${devtype} ${devnum}:${distro_bootpart} ${scriptaddr} ${prefix}${script}; source ${scriptaddr}
+boot_efi_binary=load ${devtype} ${devnum}:${distro_bootpart} ${kernel_addr_r} efi/boot/bootarm.efi; if fdt addr -q ${fdt_addr_r}; then bootefi ${kernel_addr_r} ${fdt_addr_r};else bootefi ${kernel_addr_r} ${fdtcontroladdr};fi
+boot_efi_bootmgr=if fdt addr -q ${fdt_addr_r}; then bootefi bootmgr ${fdt_addr_r};else bootefi bootmgr;fi
+boot_extlinux=sysboot ${devtype} ${devnum}:${distro_bootpart} any ${scriptaddr} ${prefix}${boot_syslinux_conf}
+boot_fdt=try
+boot_net_usb_start=usb start
+boot_prefixes=/ /boot/
+boot_script_dhcp=boot.scr.uimg
+boot_scripts=boot.scr.uimg boot.scr
+boot_syslinux_conf=extlinux/extlinux.conf
+boot_targets=mmc0 mmc1 nand0 usb0 pxe dhcp
+bootcmd=run findfdt; run init_console; run finduuid; run distro_bootcmd
+bootcmd_dhcp=devtype=dhcp; run boot_net_usb_start; if dhcp ${scriptaddr} ${boot_script_dhcp}; then source ${scriptaddr}; fi;setenv efi_fdtfile ${fdtfile}; if test -z "${fdtfile}" -a -n "${soc}"; then setenv efi_fdtfile ${soc}-${board}${boardver}.dtb; fi; setenv efi_old_vci ${bootp_vci};setenv efi_old_arch ${bootp_arch};setenv bootp_vci PXEClient:Arch:00010:UNDI:003000;setenv bootp_arch 0xa;if dhcp ${kernel_addr_r}; then tftpboot ${fdt_addr_r} dtb/${efi_fdtfile};if fdt addr -q ${fdt_addr_r}; then bootefi ${kernel_addr_r} ${fdt_addr_r}; else bootefi ${kernel_addr_r} ${fdtcontroladdr};fi;fi;setenv bootp_vci ${efi_old_vci};setenv bootp_arch ${efi_old_arch};setenv efi_fdtfile;setenv efi_old_arch;setenv efi_old_vci;
+bootcmd_mmc0=devnum=0; run mmc_boot
+bootcmd_mmc1=devnum=1; run mmc_boot
+bootcmd_nand=run nandboot
+bootcmd_pxe=run boot_net_usb_start; dhcp; if pxe get; then pxe boot; fi
+bootcmd_usb0=devnum=0; run usb_boot
+bootcount=20
+bootdelay=2
+bootm_size=0x10000000
+console=ttyO0,115200n8
+cpu=armv7
+dfu_alt_info_emmc=rawemmc raw 0 3751936;boot part 1 1;rootfs part 1 2;MLO fat 1 1;MLO.raw raw 0x100 0x200;u-boot.img.raw raw 0x300 0x1000;u-env.raw raw 0x1300 0x200;spl-os-args.raw raw 0x1500 0x200;spl-os-image.raw raw 0x1700 0x6900;spl-os-args fat 1 1;spl-os-image fat 1 1;u-boot.img fat 1 1;uEnv.txt fat 1 1
+dfu_alt_info_mmc=boot part 0 1;rootfs part 0 2;MLO fat 0 1;MLO.raw raw 0x100 0x200;u-boot.img.raw raw 0x300 0x1000;u-env.raw raw 0x1300 0x200;spl-os-args.raw raw 0x1500 0x200;spl-os-image.raw raw 0x1700 0x6900;spl-os-args fat 0 1;spl-os-image fat 0 1;u-boot.img fat 0 1;uEnv.txt fat 0 1
+dfu_alt_info_nand=SPL part 0 1;SPL.backup1 part 0 2;SPL.backup2 part 0 3;SPL.backup3 part 0 4;u-boot part 0 5;u-boot-spl-os part 0 6;kernel part 0 8;rootfs part 0 9
+dfu_alt_info_ram=kernel ram 0x80200000 0x4000000;fdt ram 0x80f80000 0x80000;ramdisk ram 0x81000000 0x4000000
+distro_bootcmd=extension_need_init=; setenv extension_overlay_addr ${fdtoverlay_addr_r}; for target in ${boot_targets}; do run bootcmd_${target}; done
+dtboaddr=0x89000000
+efi_dtb_prefixes=/ /dtb/ /dtb/current/
+eth1addr=3c:e4:b0:04:c3:34
+eth2addr=3c:e4:b0:04:c3:32
+eth3addr=de:ad:be:ef:00:01
+ethaddr=3c:e4:b0:04:c3:32
+extension_apply=if fdt addr -q ${fdt_addr_r}; then extension apply all; fi
+extension_init=echo Extension init...; if ${extension_need_init}; then extension_need_init=false; extension scan; fi
+extension_overlay_cmd=load ${devtype} ${devnum}:${distro_bootpart} ${extension_overlay_addr} ${prefix}${extension_overlay_name}
+fdt_addr_r=0x88000000
+fdtaddr=0x88000000
+fdtcontroladdr=9df2cb30
+fdtfile=undefined
+fdtoverlay_addr_r=0x89000000
+findfdt=if test $board_name = A335BONE; then setenv fdtfile am335x-bone.dtb; fi; if test $board_name = A335BNLT; then setenv fdtfile am335x-boneblack.dtb; fi; if test $board_name = A335PBGL; then setenv fdtfile am335x-pocketbeagle.dtb; fi; if test $board_name = BBBW; then setenv fdtfile am335x-boneblack-wireless.dtb; fi; if test $board_name = BBG1; then setenv fdtfile am335x-bonegreen.dtb; fi; if test $board_name = BBGW; then setenv fdtfile am335x-bonegreen-wireless.dtb; fi; if test $board_name = BBBL; then setenv fdtfile am335x-boneblue.dtb; fi; if test $board_name = BBEN; then setenv fdtfile am335x-sancloud-bbe.dtb; fi; if test $board_name = BBELITE; then setenv fdtfile am335x-sancloud-bbe-lite.dtb; fi; if test $board_name = BBE_EX_WIFI; then setenv fdtfile am335x-sancloud-bbe-extended-wifi.dtb; fi; if test $board_name = A33515BB; then setenv fdtfile am335x-evm.dtb; fi; if test $board_name = A335X_SK; then setenv fdtfile am335x-evmsk.dtb; fi; if test $board_name = A335_ICE; then setenv fdtfile am335x-icev2.dtb; if test $ice_mii = mii; then setenv pxe_label_override Pruss; fi;fi; if test $fdtfile = undefined; then echo WARNING: Could not determine device tree to use; fi;
+finduuid=part uuid mmc 0:2 uuid
+ice_mii=mii
+init_console=if test $board_name = A335_ICE; then setenv console ttyO3,115200n8;else setenv console ttyO0,115200n8;fi;
+kernel_addr_r=0x82000000
+load_efi_dtb=load ${devtype} ${devnum}:${distro_bootpart} ${fdt_addr_r} ${prefix}${efi_fdtfile}
+loadaddr=0x82000000
+loadramdisk=load mmc ${mmcdev} ${rdaddr} ramdisk.gz
+mmc_boot=if mmc dev ${devnum}; then devtype=mmc; run scan_dev_for_boot_part; fi
+mtdids=nand0=nand.0
+mtdparts=mtdparts=nand.0:128k(NAND.SPL),128k(NAND.SPL.backup1),128k(NAND.SPL.backup2),128k(NAND.SPL.backup3),256k(NAND.u-boot-spl-os),1m(NAND.u-boot),128k(NAND.u-boot-env),128k(NAND.u-boot-env.backup1),8m(NAND.kernel),-(NAND.file-system)
+nandargs=setenv bootargs console=${console} ${optargs} root=${nandroot} rootfstype=${nandrootfstype}
+nandboot=echo Booting from nand ...; run nandargs; nand read ${fdtaddr} NAND.u-boot-spl-os; nand read ${loadaddr} NAND.kernel; bootz ${loadaddr} - ${fdtaddr}
+nandroot=ubi0:rootfs rw ubi.mtd=NAND.file-system,2048
+nandrootfstype=ubifs rootwait
+netargs=setenv bootargs console=${console} ${optargs} root=/dev/nfs nfsroot=${serverip}:${rootpath},${nfsopts} rw ip=dhcp
+netboot=echo Booting from network ...; setenv autoload no; dhcp; run netloadimage; run netloadfdt; run netargs; bootz ${loadaddr} - ${fdtaddr}
+netloadfdt=tftp ${fdtaddr} ${fdtfile}
+netloadimage=tftp ${loadaddr} ${bootfile}
+nfsopts=nolock
+partitions=uuid_disk=${uuid_gpt_disk};name=bootloader,start=384K,size=1792K,uuid=${uuid_gpt_bootloader};name=rootfs,start=2688K,size=-,uuid=${uuid_gpt_rootfs}
+pxefile_addr_r=0x80100000
+ramargs=setenv bootargs console=${console} ${optargs} root=${ramroot} rootfstype=${ramrootfstype}
+ramboot=echo Booting from ramdisk ...; run ramargs; bootz ${loadaddr} ${rdaddr} ${fdtaddr}
+ramdisk_addr_r=0x88080000
+ramroot=/dev/ram0 rw
+ramrootfstype=ext2
+rdaddr=0x88080000
+rootpath=/export/rootfs
+scan_dev_for_boot=echo Scanning ${devtype} ${devnum}:${distro_bootpart}...; for prefix in ${boot_prefixes}; do run scan_dev_for_extlinux; run scan_dev_for_scripts; done;run scan_dev_for_efi;
+scan_dev_for_boot_part=part list ${devtype} ${devnum} -bootable devplist; env exists devplist || setenv devplist 1; for distro_bootpart in ${devplist}; do if fstype ${devtype} ${devnum}:${distro_bootpart} bootfstype; then part uuid ${devtype} ${devnum}:${distro_bootpart} distro_bootpart_uuid ; run scan_dev_for_boot; fi; done; setenv devplist
+scan_dev_for_efi=setenv efi_fdtfile ${fdtfile}; if test -z "${fdtfile}" -a -n "${soc}"; then setenv efi_fdtfile ${soc}-${board}${boardver}.dtb; fi; run extension_init; for prefix in ${efi_dtb_prefixes}; do if test -e ${devtype} ${devnum}:${distro_bootpart} ${prefix}${efi_fdtfile}; then run load_efi_dtb; run extension_apply; fi;done;run boot_efi_bootmgr;if test -e ${devtype} ${devnum}:${distro_bootpart} efi/boot/bootarm.efi; then echo Found EFI removable media binary efi/boot/bootarm.efi; run boot_efi_binary; echo EFI LOAD FAILED: continuing...; fi; setenv efi_fdtfile
+scan_dev_for_extlinux=if test -e ${devtype} ${devnum}:${distro_bootpart} ${prefix}${boot_syslinux_conf}; then echo Found ${prefix}${boot_syslinux_conf}; run boot_extlinux; echo EXTLINUX FAILED: continuing...; fi
+scan_dev_for_scripts=for script in ${boot_scripts}; do if test -e ${devtype} ${devnum}:${distro_bootpart} ${prefix}${script}; then echo Found U-Boot script ${prefix}${script}; run boot_a_script; echo SCRIPT FAILED: continuing...; fi; done
+scriptaddr=0x80000000
+serial#=2208SBB14878
+soc=am33xx
+spiargs=setenv bootargs console=${console} ${optargs} root=${spiroot} rootfstype=${spirootfstype}
+spiboot=echo Booting from spi ...; run spiargs; sf probe ${spibusno}:0; sf read ${loadaddr} ${spisrcaddr} ${spiimgsize}; bootz ${loadaddr}
+spibusno=0
+spiimgsize=0x362000
+spiroot=/dev/mtdblock4 rw
+spirootfstype=jffs2
+spisrcaddr=0xe0000
+static_ip=${ipaddr}:${serverip}:${gatewayip}:${netmask}:${hostname}::off
+stderr=serial@0
+stdin=serial@0
+stdout=serial@0
+usb_boot=usb start; if usb dev ${devnum}; then devtype=usb; run scan_dev_for_boot_part; fi
+usbnet_devaddr=de:ad:be:ef:00:01
+vendor=ti
+ver=U-Boot 2025.01-rc3-00035-g65b38a519b0f (Dec 01 2024 - 01:23:30 +0100)
