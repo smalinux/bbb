@@ -4,3 +4,4 @@ beaglebone_reset_factory/
 uboot_standalone/u-boot/
 uboot_standalone/env/uboot.env
 uboot_standalone/env/uEnv.txt
+barebox_standalone/barebox/
